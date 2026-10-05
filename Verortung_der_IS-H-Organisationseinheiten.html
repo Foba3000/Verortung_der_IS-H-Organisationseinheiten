@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<title>Verortung der IS-H-Organisationseinheiten</title>
+<!-- ===================== EINTRÄGE HIER BEARBEITEN ===================== -->
+<script type="text/plain" id="daten">
+# EINE ZEILE PRO EINTRAG, Felder getrennt mit |   (auch Tab geht, z. B. aus Excel kopiert)
+#   Kürzel | Bezeichnung | Überbegriff | Standort | Telefon | Info
+# \  = Zeilenumbruch innerhalb eines Feldes (z. B. mehrere Telefonnummern)
+# Feld leer lassen = nichts eintragen (| |). Leere Felder am Zeilenende einfach weglassen.
+# Zeilen, die mit # beginnen, werden ignoriert.
+ABCD | Allgemeine Beschaffungs- und Controlling-Direktion | Verwaltung | Haus A, 2. Stock \ Musterstraße 12 \ 8010 Graz (Eingang Nord) | +43 316 123456-10 \ +43 316 123456-11 | Nur Mo–Fr 8–16 Uhr besetzt.
+BIOL | Biologielabor | Labor | Haus C, Erdgeschoss \ Raum C.014 | +43 316 123456-40
+CHEM | Chemikalienlager | Lager | Haus D, Keller \ Zufahrt Hofseite (Osten) \ Rampe 2 | +43 316 123456-55 | Schlüssel beim Portier abholen. \ Zutritt nur mit Unterweisung.
+EDV | IT-Support / Helpdesk | IT | Haus A, 1. Stock, Raum A.105 | +43 316 123456-20 \ +43 316 123456-21 (Notdienst) | Ticketsystem: intern/helpdesk
+FW | Feuerwehrzufahrt | Notfall | Westseite, Tor 3 \ Himmelsrichtung: West | 122 | Schlüsselkasten links neben dem Tor.
+GAS | Gasflaschenlager | Lager | Hof, Container 2 \ Himmelsrichtung: Südost | | Nur mit Unterweisung. Keine Telefonnummer vorhanden.
+HW | Hausmeisterwerkstatt | Werkstatt | Haus B, Untergeschoss | +43 316 123456-33
+KANT | Kantine | Gastronomie | Haus A, Erdgeschoss \ Südflügel | +43 316 123456-90 | Mittagsmenü 11:30–13:30 Uhr.
+PORT | Portier / Haupteingang | Empfang | Haus A, Haupteingang \ Musterstraße 12 \ 8010 Graz | +43 316 123456-0 \ +43 316 123456-1 | 24 Stunden besetzt.
+RZ | Rechenzentrum | IT | Haus E, 3. Stock | +43 316 123456-70 | Zutritt nur mit Badge Stufe 3.
+ZPS | Zentrale Poststelle | Verwaltung | Haus B, Erdgeschoss \ Hofseite (Süden) | +43 316 123456-15 | Abholung bis 15:00 Uhr.
+</script>
+<!-- ==================================================================== -->
+<style>
+:root{
+  --bg:#fff;--card:#fff;--soft:#f3f9fc;--text:#101c22;--muted:#546872;--line:#d5e3ea;
+  --a1:#015a7c;--a2:#0084ab;--a3:#51bae9;--t1:#015a7c;--t2:#0084ab;
+  --mark:#ffe94d;--marktext:#000;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#000;--card:#0f1418;--soft:#0f1418;--text:#f2f6f8;--muted:#9fb3bd;--line:#26363e;--t1:#51bae9;--t2:#51bae9}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+button,input{font:inherit;color:inherit;touch-action:manipulation}
+button{cursor:pointer;border:0;background:none;padding:0}
+.wrap{max-width:720px;margin:0 auto;padding:0 10px}
+
+/* ---------- Titel: groß oben, einzeilig & klein beim Scrollen ---------- */
+.tbig{overflow:hidden;max-height:90px;padding-top:8px;opacity:1;
+  transition:max-height .2s ease,padding .2s ease,opacity .15s ease}
+h1{margin:0;text-align:center;font-size:clamp(17px,5.2vw,24px);line-height:1.2;font-weight:800;color:var(--t1)}
+h1 span{display:block;white-space:nowrap}
+.bar{display:block;width:min(90%,340px);height:2px;margin:8px auto;background:var(--a3)}
+.tsmall{overflow:hidden;max-height:0;opacity:0;text-align:center;white-space:nowrap;font-weight:800;color:var(--t1);
+  font-size:clamp(12px,3.6vw,15px);line-height:20px;transition:max-height .2s ease,opacity .15s ease,margin .2s ease}
+#hdr.compact .tbig{max-height:0;padding-top:0;opacity:0}
+#hdr.compact .tsmall{max-height:28px;opacity:1;margin-bottom:2px}
+#tlink{padding:4px 8px;border-radius:6px;cursor:pointer}
+#tlink:active{opacity:.6}
+#az[hidden]{display:none}
+.nomo,.nomo *{transition:none!important}
+
+/* ---------- Fixierter Kopf: Titel + Suchleisten ---------- */
+#hdr{position:fixed;top:0;left:0;right:0;z-index:20;background:var(--bg);padding:6px 0;border-bottom:2px solid var(--a3)}
+.search{display:block;width:100%;background:var(--card);outline:0;
+  -webkit-appearance:none;appearance:none;border-radius:12px}
+#kq{height:50px;font-size:20px;font-weight:600;padding:0 14px;border:3px solid var(--a2)}
+#kq:focus{border-color:var(--t1);box-shadow:0 0 0 3px var(--a3)}
+#gq{height:44px;margin-top:6px;padding:0 14px;border:1px solid var(--line)}
+#gq:focus{border-color:var(--a2);box-shadow:0 0 0 2px var(--a3)}
+
+/* ---------- A–Z-Raster (scrollt mit, alle Buchstaben sichtbar) ---------- */
+#az{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:4px;padding-top:12px;padding-bottom:4px}
+#az button{height:44px;border:1.5px solid var(--a2);border-radius:10px;font-weight:800;font-size:17px;
+  color:var(--t1);background:var(--card)}
+#az button:disabled{opacity:.25;border-color:var(--line);cursor:default}
+#az button:not(:disabled):active{background:var(--a3);border-color:var(--a3);color:#000}
+
+/* ---------- Liste ---------- */
+#count{font-size:13px;color:var(--muted);margin:8px 4px 0}
+.letter{margin:8px 0;padding:10px 4px 4px;font-size:18px;font-weight:800;color:var(--t2);
+  letter-spacing:.08em;border-bottom:2px solid var(--a3)}
+.item{display:flex;align-items:center;gap:10px;width:100%;min-height:60px;margin:0 0 8px;
+  padding:8px 12px;text-align:left;background:var(--card);border:1px solid var(--line);
+  border-left:5px solid var(--a2);border-radius:10px;transition:transform .08s,filter .08s}
+.item:active{transform:scale(.985);filter:brightness(.88)}
+.kz{flex:0 0 auto;min-width:56px;font-size:21px;font-weight:800;color:var(--t1);letter-spacing:.5px}
+.tx{flex:1;min-width:0;display:block}
+.bz{display:block;font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.ub{display:block;font-size:13px;color:var(--muted)}
+.hit{display:block;font-size:13px;margin-top:3px;overflow-wrap:anywhere}
+.hit b{color:var(--t1)}
+.chev{flex:0 0 auto;font-size:26px;color:var(--a3)}
+mark{background:var(--mark);color:var(--marktext);border-radius:3px;padding:0 1px}
+#empty{padding:40px 10px;text-align:center;color:var(--muted)}
+
+/* ---------- Nach-oben-Button ---------- */
+#top{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(14px + env(safe-area-inset-bottom));
+  width:48px;height:48px;border-radius:50%;background:var(--a1);border:2px solid var(--a3);
+  opacity:0;pointer-events:none;transition:opacity .2s;z-index:10;
+  display:flex;align-items:center;justify-content:center}
+#top.show{opacity:.85;pointer-events:auto}
+#top:active{filter:brightness(.8)}
+
+/* ---------- Vollbild-Pop-up (alles linksbündig) ---------- */
+#ov{position:fixed;top:0;right:0;bottom:0;left:0;z-index:50;background:var(--bg);text-align:left;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:pop .2s ease-out}
+#ov[hidden]{display:none}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.ovtop{position:sticky;top:0;display:flex;align-items:center;justify-content:flex-start;min-height:68px;
+  padding:10px 68px 10px 16px;padding-top:max(10px,env(safe-area-inset-top));
+  background:var(--a1);color:#fff;border-bottom:4px solid var(--a3)}
+.ovtop .u{font-size:20px;line-height:1.2;font-weight:800;overflow-wrap:anywhere}
+.x{position:absolute;right:8px;top:50%;margin-top:-26px;width:52px;height:52px;border-radius:50%;
+  background:#fff;display:flex;align-items:center;justify-content:center;transition:transform .08s,filter .08s}
+.x:active{transform:scale(.92);filter:brightness(.8)}
+.x svg{width:28px;height:28px;stroke:var(--a1);stroke-width:3.5;stroke-linecap:round}
+.ovbody{padding:20px 16px calc(28px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+.kzbig{font-size:40px;line-height:1.1;font-weight:800;color:var(--t1);letter-spacing:1px;overflow-wrap:anywhere}
+.bzbig{font-size:20px;font-weight:600;margin:6px 0 4px;overflow-wrap:anywhere}
+.blk{margin-top:14px;padding:12px 14px;background:var(--soft);border:1px solid var(--line);
+  border-top:4px solid var(--a3);border-radius:10px}
+.blk h3{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--t1)}
+.ln{font-size:18px;overflow-wrap:anywhere}
+.blk a{display:flex;align-items:center;justify-content:flex-start;min-height:44px;color:var(--text);
+  font-size:18px;font-weight:600;text-decoration:none}
+.blk a:active{filter:brightness(.7)}
+@media (prefers-reduced-motion:reduce){#ov{animation:none}}
+</style>
+</head>
+<body>
+
+<header id="hdr"><div class="wrap">
+  <div id="ttl">
+    <div class="tbig"><h1><span>Verortung der</span><span>IS-H-Organisationseinheiten</span></h1><i class="bar"></i></div>
+    <div class="tsmall"><button id="tlink" type="button" aria-label="Nach oben">Verortung der IS-H-Organisationseinheiten</button></div>
+  </div>
+  <input id="kq" class="search" type="search" placeholder="Kürzel suchen …" aria-label="Kürzel suchen" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="search">
+  <input id="gq" class="search" type="search" placeholder="Volltextsuche (alle Felder) …" aria-label="Volltextsuche" autocomplete="off" spellcheck="false" enterkeyhint="search">
+</div></header>
+
+<nav id="az" class="wrap" aria-label="Alphabet"></nav>
+
+<main class="wrap">
+  <div id="count" aria-live="polite"></div>
+  <div id="list"></div>
+  <div id="empty" hidden>Keine Treffer.</div>
+</main>
+
+<button id="top" aria-label="Nach oben">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15l7-7 7 7"/></svg>
+</button>
+
+<div id="ov" hidden role="dialog" aria-modal="true"></div>
+
+<script>
+/* ================= Logik ================= */
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* Einträge aus dem Textblock #daten einlesen */
+const lines = v => (v || '').split('\\').map(x => x.trim()).filter(Boolean);
+const ITEMS = document.getElementById('daten').textContent.split(/\r?\n/)
+  .map(l => l.trim()).filter(l => l && l.charAt(0) !== '#')
+  .map(l => { const f = l.split(/[|\t]/).map(x => x.trim());
+    return {k:f[0]||'', b:f[1]||'', u:f[2]||'', s:lines(f[3]), t:lines(f[4]), z:lines(f[5])}; })
+  .filter(i => i.k)
+  .sort((a, b) => a.k.localeCompare(b.k, 'de', {sensitivity:'base', numeric:true}));
+
+const hdr = $('#hdr'), kq = $('#kq'), gq = $('#gq'), az = $('#az'),
+      list = $('#list'), empty = $('#empty'), count = $('#count'),
+      topBtn = $('#top'), ov = $('#ov');
+
+/* Markierung (gelber Textmarker) */
+function hl(text, q) {
+  if (!q) return esc(text);
+  const lo = text.toLowerCase(), ql = q.toLowerCase();
+  let out = '', i = 0, j;
+  while ((j = lo.indexOf(ql, i)) > -1) {
+    out += esc(text.slice(i, j)) + '<mark>' + esc(text.slice(j, j + q.length)) + '</mark>';
+    i = j + q.length;
+  }
+  return out + esc(text.slice(i));
+}
+const has = (t, q) => t.toLowerCase().includes(q.toLowerCase());
+
+const letterOf = k => {
+  const c = k.charAt(0).normalize('NFD').charAt(0).toUpperCase();
+  return /[A-Z]/.test(c) ? c : '#';
+};
+
+/* A–Z-Leiste einmalig aufbauen */
+az.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+  .map(l => `<button data-l="${l}" aria-label="Zu ${l}">${l}</button>`).join('');
+
+/* Rendern */
+function render() {
+  const k = kq.value.trim(), g = gq.value.trim(), q = k || g;
+  /* Reihenfolge: zuerst Treffer, die mit dem Suchbegriff BEGINNEN, dann Treffer mittendrin
+     (jeweils alphabetisch, ohne sichtbare Trennung) */
+  const rows = [], rest = [];
+  const sw = (x, q) => x.toLowerCase().startsWith(q.toLowerCase());
+  ITEMS.forEach((it, idx) => {
+    if (k) {
+      if (!has(it.k, k)) return;
+      (sw(it.k, k) ? rows : rest).push([it, idx]);
+    } else if (g) {
+      const f = [it.k, it.b, it.u, ...it.s, ...it.t, ...it.z];
+      if (!f.some(x => has(x, g))) return;
+      (f.some(x => sw(x, g)) ? rows : rest).push([it, idx]);
+    } else rows.push([it, idx]);
+  });
+  rows.push(...rest);
+  const searching = !!(k || g);
+
+  const groups = new Map();
+  let html = '';
+  rows.forEach(([it, idx]) => {
+    const L = letterOf(it.k);
+    let aid = '';
+    if (!groups.has(L)) {
+      groups.set(L, 1);
+      if (searching) aid = ` id="L-${L}"`;   /* bei Suche: keine Buchstaben-Überschriften */
+      else html += `<h2 class="letter" id="L-${L}">${L}</h2>`;
+    }
+    let hits = '';
+    if (!k && g) {
+      [['Standort', it.s], ['Telefon', it.t], ['Info', it.z]].forEach(([lab, arr]) => {
+        const m = arr.find(x => has(x, g));
+        if (m) hits += `<span class="hit"><b>${lab}:</b> ${hl(m, g)}</span>`;
+      });
+    }
+    html += `<button class="item" data-i="${idx}"${aid}><span class="kz">${hl(it.k, q)}</span>` +
+      `<span class="tx">${it.b ? `<span class="bz">${hl(it.b, !k ? g : '')}</span>` : ''}` +
+      `${it.u ? `<span class="ub">${hl(it.u, !k ? g : '')}</span>` : ''}${hits}</span>` +
+      `<span class="chev" aria-hidden="true">›</span></button>`;
+  });
+
+  list.innerHTML = html;
+  empty.hidden = rows.length > 0;
+  count.textContent = q ? `${rows.length} Treffer` : '';
+  az.hidden = searching;
+  az.querySelectorAll('button').forEach(b => { b.disabled = !groups.has(b.dataset.l); });
+}
+
+/* Suchfelder: jeweils nur eine aktiv, Live-Suche */
+kq.addEventListener('input', () => { if (kq.value) gq.value = ''; render(); refreshForced(); });
+gq.addEventListener('input', () => { if (gq.value) kq.value = ''; render(); refreshForced(); });
+
+/* Sprungleiste */
+az.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || b.disabled) return;
+  const t = document.getElementById('L-' + b.dataset.l);
+  if (t) window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - HC - 4);
+});
+
+
+/* Kopf: Titel wird beim Scrollen klein; Layout darunter bleibt stabil */
+let HE = 0, HC = 0, D = 0, compact = false, forced = false, focused = false, blurT = 0;
+function measure() {
+  hdr.classList.add('nomo');
+  hdr.classList.remove('compact'); HE = hdr.offsetHeight;
+  hdr.classList.add('compact'); HC = hdr.offsetHeight;
+  hdr.classList.toggle('compact', compact);
+  void hdr.offsetHeight;
+  hdr.classList.remove('nomo');
+  D = HE - HC;
+  applySpacer();
+}
+function applySpacer() { document.body.style.paddingTop = (forced ? HC : HE) + 'px'; }
+function upd() {
+  const y = window.scrollY;
+  topBtn.classList.toggle('show', y > 300);
+  const want = forced || (compact ? y >= D - 10 : y > D + 10);
+  if (want !== compact) { compact = want; hdr.classList.toggle('compact', want); }
+}
+/* Während der Suche (Fokus im Feld oder Suchbegriff vorhanden): Kopf immer einzeilig */
+function setForced(f) {
+  if (f === forced) return;
+  const y = window.scrollY;
+  forced = f; applySpacer();
+  if (f) { compact = true; hdr.classList.add('compact'); window.scrollTo(0, Math.max(0, y - D)); }
+  else window.scrollTo(0, y > 0 ? y + D : 0);
+  upd();
+}
+function refreshForced() { setForced(focused || !!(kq.value || gq.value)); }
+[kq, gq].forEach(el => {
+  el.addEventListener('focus', () => { clearTimeout(blurT); focused = true; refreshForced(); });
+  el.addEventListener('blur', () => { clearTimeout(blurT); blurT = setTimeout(() => { focused = false; refreshForced(); }, 250); });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') el.blur(); });
+});
+$('#tlink').addEventListener('click', () => window.scrollTo(0, 0));
+let tick = false;
+window.addEventListener('scroll', () => {
+  if (tick) return; tick = true;
+  requestAnimationFrame(() => { upd(); tick = false; });
+}, {passive:true});
+window.addEventListener('resize', () => { measure(); upd(); });
+window.addEventListener('load', () => { measure(); upd(); });
+topBtn.addEventListener('click', () => window.scrollTo({top:0}));
+
+/* ---------- Detail-Pop-up ---------- */
+const X_SVG = '<svg viewBox="0 0 24 24" fill="none"><path d="M5 5l14 14M19 5L5 19"/></svg>';
+let pushed = false;
+
+function block(label, inner) { return `<section class="blk"><h3>${label}</h3>${inner}</section>`; }
+const telLine = (l, q) => {
+  const m = l.match(/\+?\d[\d\s\/().-]*\d/);
+  return m ? `<a href="tel:${m[0].replace(/[^\d+]/g, '')}">${hl(l, q)}</a>` : `<div class="ln">${hl(l, q)}</div>`;
+};
+
+function openDetail(i) {
+  const it = ITEMS[i], q = kq.value.trim() ? '' : gq.value.trim();
+  let h = `<div class="ovtop"><div class="u">${it.u ? hl(it.u, q) : ''}</div>` +
+          `<button class="x" data-close aria-label="Schließen">${X_SVG}</button></div><div class="ovbody">` +
+          `<div class="kzbig">${hl(it.k, q)}</div>`;
+  if (it.b) h += `<div class="bzbig">${hl(it.b, q)}</div>`;
+  if (it.s.length) h += block('Standort', it.s.map(l => `<div class="ln">${hl(l, q)}</div>`).join(''));
+  if (it.t.length) h += block('Telefon', it.t.map(l => telLine(l, q)).join(''));
+  if (it.z.length) h += block('Zusatzinfo', it.z.map(l => `<div class="ln">${hl(l, q)}</div>`).join(''));
+  ov.innerHTML = h + '</div>';
+  ov.hidden = false;
+  ov.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  try { history.pushState({d:1}, ''); pushed = true; } catch (e) { pushed = false; }
+}
+function hideDetail() { ov.hidden = true; document.body.style.overflow = ''; }
+function closeDetail() {
+  if (ov.hidden) return;
+  if (pushed) { pushed = false; history.back(); } else hideDetail();
+}
+
+list.addEventListener('click', e => {
+  const b = e.target.closest('.item'); if (b) openDetail(+b.dataset.i);
+});
+ov.addEventListener('click', e => { if (e.target.closest('[data-close]')) closeDetail(); });
+window.addEventListener('popstate', () => { pushed = false; hideDetail(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
+
+render();
+measure();
+upd();
+</script>
+</body>
+</html>
