@@ -738,7 +738,7 @@ document.addEventListener('touchstart', e => {
 document.addEventListener('touchend', e => {
   if (!swOn) return; swOn = false;
   const t = e.changedTouches[0], dx = t.clientX - swX, dy = t.clientY - swY;
-  if (Math.abs(dx) < window.innerWidth * 0.5 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
+  if (Math.abs(dx) < window.innerWidth * 0.3 || Math.abs(dy) > Math.abs(dx) * 0.5) return;
   if (!ov.hidden) closeDetail(); else if (forced) exitSearch();
 }, {passive:true});
 document.addEventListener('touchcancel', () => { swOn = false; }, {passive:true});
