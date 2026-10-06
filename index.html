@@ -600,16 +600,22 @@ const hdr = $('#hdr'), kq = $('#kq'), gq = $('#gq'), az = $('#az'),
       topBtn = $('#top'), ov = $('#ov');
 
 /* Markierung (gelber Textmarker) */
+const terms = q => (q || '').toLowerCase().split(/\s+/).filter(Boolean);
 function hl(text, q) {
   const E = s => esc(s).replace(/\//g, '/<wbr>');   /* erlaubt Umbruch nach Schrägstrich */
-  if (!q) return E(text);
-  const lo = text.toLowerCase(), ql = q.toLowerCase();
-  let out = '', i = 0, j;
-  while ((j = lo.indexOf(ql, i)) > -1) {
-    out += E(text.slice(i, j)) + '<mark>' + E(text.slice(j, j + q.length)) + '</mark>';
-    i = j + q.length;
-  }
-  return out + E(text.slice(i));
+  const T = terms(q);
+  if (!T.length) return E(text);
+  const lo = text.toLowerCase(), m = [];
+  T.forEach(t => { let i = 0, j; while ((j = lo.indexOf(t, i)) > -1) { m.push([j, j + t.length]); i = j + t.length; } });
+  m.sort((a, b) => a[0] - b[0]);
+  let out = '', pos = 0;
+  m.forEach(([a, b]) => {
+    if (b <= pos) return;
+    const st = Math.max(a, pos);
+    out += E(text.slice(pos, st)) + '<mark>' + E(text.slice(st, b)) + '</mark>';
+    pos = b;
+  });
+  return out + E(text.slice(pos));
 }
 const has = (t, q) => t.toLowerCase().includes(q.toLowerCase());
 
@@ -629,14 +635,15 @@ function render() {
      (jeweils alphabetisch, ohne sichtbare Trennung) */
   const rows = [], rest = [];
   const sw = (x, q) => x.toLowerCase().startsWith(q.toLowerCase());
+  const G = terms(g);
   ITEMS.forEach((it, idx) => {
     if (k) {
       if (!has(it.k, k)) return;
       (sw(it.k, k) ? rows : rest).push([it, idx]);
     } else if (g) {
-      const f = [it.k, it.b, it.u, ...it.s, ...it.t, ...it.z];
-      if (!f.some(x => has(x, g))) return;
-      (f.some(x => sw(x, g)) ? rows : rest).push([it, idx]);
+      const f = [it.k, it.b, it.u, ...it.s, ...it.t, ...it.z], all = f.join('\n').toLowerCase();
+      if (!G.every(t => all.includes(t))) return;
+      (f.some(x => sw(x, G[0])) ? rows : rest).push([it, idx]);
     } else rows.push([it, idx]);
   });
   rows.push(...rest);
@@ -655,8 +662,9 @@ function render() {
     let hits = '';
     if (!k && g) {
       [['Standort', it.s], ['Telefon', it.t], ['Info', it.z]].forEach(([lab, arr]) => {
-        const m = arr.find(x => has(x, g));
-        if (m) hits += `<span class="hit"><b>${lab}:</b> ${hl(m, g)}</span>`;
+        let m = '', best = 0;
+        arr.forEach(x => { const n = G.filter(t => x.toLowerCase().includes(t)).length; if (n > best) { best = n; m = x; } });
+       if (m) hits += `<span class="hit"><b>${lab}:</b> ${hl(m, g)}</span>`;
       });
     }
     html += `<button class="item" data-i="${idx}"${aid}><span class="kz">${hl(it.k, q)}</span>` +
