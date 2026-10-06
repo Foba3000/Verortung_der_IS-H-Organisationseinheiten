@@ -662,9 +662,9 @@ function render() {
     let hits = '';
     if (!k && g) {
       [['Standort', it.s], ['Telefon', it.t], ['Info', it.z]].forEach(([lab, arr]) => {
-        let m = '', best = 0;
-        arr.forEach(x => { const n = G.filter(t => x.toLowerCase().includes(t)).length; if (n > best) { best = n; m = x; } });
-       if (m) hits += `<span class="hit"><b>${lab}:</b> ${hl(m, g)}</span>`;
+          arr.forEach(x => {
+          if (G.some(t => x.toLowerCase().includes(t))) hits += `<span class="hit"><b>${lab}:</b> ${hl(x, g)}</span>`;
+        });
       });
     }
     html += `<button class="item" data-i="${idx}"${aid}>${it.k ? '<span class="kz">' + hl(it.k, q) + '</span>' : ''}` +
