@@ -592,9 +592,9 @@ const ITEMS = document.getElementById('daten').textContent.split(/\r?\n/)
   .map(l => l.trim()).filter(l => l && l.charAt(0) !== '#')
   .map(l => { const f = l.split(/[|\t]/).map(x => x.trim());
     return {k:f[0]||'', b:f[1]||'', u:f[2]||'', s:lines(f[3]), t:lines(f[4]), z:lines(f[5])}; })
-  .filter(i => i.k)
-  .sort((a, b) => a.k.localeCompare(b.k, 'de', {sensitivity:'base', numeric:true}));
-
+  .filter(i => i.k || i.b)
+  .sort((a, b) => (a.k || a.b).localeCompare(b.k || b.b, 'de', {sensitivity:'base', numeric:true}));
+ 
 const hdr = $('#hdr'), kq = $('#kq'), gq = $('#gq'), az = $('#az'),
       list = $('#list'), empty = $('#empty'), count = $('#count'),
       topBtn = $('#top'), ov = $('#ov');
@@ -652,7 +652,7 @@ function render() {
   const groups = new Map();
   let html = '';
   rows.forEach(([it, idx]) => {
-    const L = letterOf(it.k);
+    const L = letterOf(it.k || it.b);
     let aid = '';
     if (!groups.has(L)) {
       groups.set(L, 1);
@@ -667,8 +667,8 @@ function render() {
        if (m) hits += `<span class="hit"><b>${lab}:</b> ${hl(m, g)}</span>`;
       });
     }
-    html += `<button class="item" data-i="${idx}"${aid}><span class="kz">${hl(it.k, q)}</span>` +
-      `<span class="tx">${it.b ? `<span class="bz">${hl(it.b, !k ? g : '')}</span>` : ''}` +
+    html += `<button class="item" data-i="${idx}"${aid}>${it.k ? '<span class="kz">' + hl(it.k, q) + '</span>' : ''}` +
+     `<span class="tx">${it.b ? `<span class="bz">${hl(it.b, !k ? g : '')}</span>` : ''}` +
       `${it.u ? `<span class="ub">${hl(it.u, !k ? g : '')}</span>` : ''}${hits}</span>` +
       `<span class="chev" aria-hidden="true">›</span></button>`;
   });
@@ -773,7 +773,7 @@ function openDetail(i) {
   const it = ITEMS[i], q = kq.value.trim() ? '' : gq.value.trim();
   let h = `<div class="ovtop"><div class="u">${it.u ? hl(it.u, q) : ''}</div>` +
           `<button class="x" data-close aria-label="Schließen">${X_SVG}</button></div><div class="ovbody">` +
-          `<div class="kzbig">${hl(it.k, q)}</div>`;
+          (it.k ? `<div class="kzbig">${hl(it.k, q)}</div>` : '');
   if (it.b) h += `<div class="bzbig">${hl(it.b, q)}</div>`;
   if (it.s.length) h += block('Standort', it.s.map(l => `<div class="ln">${hl(l, q)}</div>`).join(''));
   if (it.t.length) h += block('Telefon', it.t.map(l => telLine(l, q)).join(''));
